@@ -10,8 +10,9 @@
     .container { max-width: 500px; margin: 0 auto; }
     .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 20px; margin-bottom: 15px; }
     h2, h3 { color: #38bdf8; margin-bottom: 12px; }
-    input { width: 100%; padding: 12px; margin: 8px 0 16px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; }
-    .btn { background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+    label { font-size: 14px; color: #94a3b8; display: block; margin-top: 10px; }
+    input { width: 100%; padding: 12px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+    .btn { background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 5px; }
     .btn-green { background: #10b981; }
     .btn-red { background: #ef4444; }
     .btn-orange { background: #f59e0b; color: #000; }
@@ -26,14 +27,18 @@
 
 <div class="container">
 
-  <!-- AUTH SECTION -->
+  <!-- AUTH SECTION (LOGIN & REGISTER) -->
   <div id="authSection" class="card">
     <h2>🔐 CPA Rewards Login</h2>
-    <label>Email</label>
+    <label>Email Address</label>
     <input type="email" id="authEmail" placeholder="user@example.com">
     <label>Password</label>
     <input type="password" id="authPass" placeholder="******">
-    <button class="btn" onclick="handleAuth()">Login / Account बनाएं</button>
+    
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <button class="btn" onclick="handleLogin()">Login</button>
+      <button class="btn btn-green" onclick="handleRegister()">Create Account</button>
+    </div>
   </div>
 
   <!-- USER DASHBOARD -->
@@ -73,6 +78,7 @@
     doc, getDoc, setDoc, updateDoc, collection, getDocs, increment 
   } from './firebase-config.js';
 
+  // AUTH STATE MONITORING
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       document.getElementById('authSection').classList.add('hidden');
@@ -87,25 +93,44 @@
     }
   });
 
-  window.handleAuth = async function() {
+  // LOGIN FUNCTION
+  window.handleLogin = async function() {
     const email = document.getElementById('authEmail').value.trim();
     const pass = document.getElementById('authPass').value.trim();
     if(!email || !pass) return alert("Email और Password दोनों भरें!");
 
     try {
       await signInWithEmailAndPassword(auth, email, pass);
+      alert("✅ लॉगिन सफल रहा!");
     } catch(err) {
-      try {
-        const res = await createUserWithEmailAndPassword(auth, email, pass);
-        await setDoc(doc(db, "users", res.user.uid), { email: email, coins: 0 });
-      } catch(createErr) {
-        alert("Auth Error: " + createErr.message);
-      }
+      alert("Login Error: " + err.message);
     }
   };
 
+  // REGISTER (CREATE ACCOUNT) FUNCTION
+  window.handleRegister = async function() {
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value.trim();
+    if(!email || !pass) return alert("Email और Password दोनों भरें!");
+    if(pass.length < 6) return alert("Password कम से कम 6 अक्षर का होना चाहिए!");
+
+    try {
+      const res = await createUserWithEmailAndPassword(auth, email, pass);
+      await setDoc(doc(db, "users", res.user.uid), { 
+        email: email, 
+        coins: 0,
+        createdAt: new Date().toISOString()
+      });
+      alert("🎉 Account सफलतापूर्वक बन गया!");
+    } catch(err) {
+      alert("Registration Error: " + err.message);
+    }
+  };
+
+  // LOGOUT
   window.handleLogout = () => signOut(auth);
 
+  // LOAD USER DATA
   async function loadUserData(uid, email) {
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
@@ -132,7 +157,7 @@
 
     if (now - lastClaim < oneDay) {
       const hoursLeft = Math.ceil((oneDay - (now - lastClaim)) / (1000 * 60 * 60));
-      return alert(`बोनस क्लेम हो चुका है! ${hoursLeft} घंटे बाद दोबारा आएं।`);
+      return alert(`बोनस पहले ही क्लेम हो चुका है! ${hoursLeft} घंटे बाद दोबारा आएं।`);
     }
 
     await updateDoc(userRef, {
@@ -144,7 +169,7 @@
     loadUserData(user.uid, user.email);
   };
 
-  // WITHDRAWAL FEATURE
+  // WITHDRAWAL REQUEST FEATURE
   window.requestWithdrawal = async function() {
     const user = auth.currentUser;
     if(!user) return;
@@ -177,7 +202,7 @@
     loadUserData(user.uid, user.email);
   };
 
-  // LOAD TASKS
+  // LOAD CPA TASKS
   async function loadLiveTasks() {
     const taskContainer = document.getElementById('taskList');
     try {
@@ -205,6 +230,7 @@
     } catch(e) { console.error(e); }
   }
 
+  // CLAIM TASK
   window.claimTask = async function(link, reward) {
     window.open(link, '_blank');
     const user = auth.currentUser;
@@ -212,7 +238,7 @@
 
     try {
       await updateDoc(doc(db, "users", user.uid), { coins: increment(reward) });
-      alert(`🎉 Congratulation! +${reward} Coins जुड़ गए।`);
+      alert(`🎉 Congratulation! +${reward} Coins जुड़ गए।`);
       loadUserData(user.uid, user.email);
     } catch(err) { alert("Task processing failed: " + err.message); }
   };
