@@ -7,7 +7,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: window.env?.FIREBASE_API_KEY || "YOUR_NETLIFY_ENV_API_KEY",
+  apiKey: "AIzaSyAmG-m4ztMtLIzISJG6JY7Vs1pt7v1kKaM",
   authDomain: "my-cpa-reward-app.firebaseapp.com",
   projectId: "my-cpa-reward-app",
   storageBucket: "my-cpa-reward-app.firebasestorage.app",
