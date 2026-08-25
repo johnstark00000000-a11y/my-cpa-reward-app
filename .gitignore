@@ -1,0 +1,19 @@
+# Local Environment Variables
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# Configuration files with secrets
+firebase-config.local.js
+config.json
+
+# Dependencies & Node (अगर भविष्य में npm इस्तेमाल करो)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System Files
+.DS_Store
+Thumbs.db
