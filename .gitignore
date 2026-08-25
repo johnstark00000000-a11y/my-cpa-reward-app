@@ -7,6 +7,7 @@
 # Configuration files with secrets
 firebase-config.local.js
 config.json
+config.js
 
 # Dependencies & Node (अगर भविष्य में npm इस्तेमाल करो)
 node_modules/
