@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPA Rewards Hub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #0b0f19; color: #f3f4f6; min-height: 100vh; padding: 15px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    .card { background: #161e2e; border: 1px solid #1f293d; border-radius: 14px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); }
+    h2, h3 { color: #38bdf8; margin-bottom: 12px; }
+    input { width: 100%; padding: 12px; margin: 8px 0 16px; border-radius: 8px; border: 1px solid #374151; background: #0b0f19; color: #fff; font-size: 15px; }
+    .btn { background: #2563eb; color: #fff; border: none; padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn:hover { background: #1d4ed8; }
+    .btn-green { background: #10b981; }
+    .btn-green:hover { background: #059669; }
+    .btn-red { background: #ef4444; }
+    .btn:disabled { background: #4b5563; cursor: not-allowed; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .badge { background: #0284c7; padding: 4px 10px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+    .task-item { border-left: 4px solid #38bdf8; background: #1f293d; padding: 12px; border-radius: 6px; margin: 10px 0; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 1. AUTH / LOGIN SECTION -->
+  <div id="authSection" class="card">
+    <h2>🔐 CPA Rewards Login</h2>
+    <label>Email</label>
+    <input type="email" id="authEmail" placeholder="user@example.com">
+    <label>Password</label>
+    <input type="password" id="authPass" placeholder="******">
+    <button class="btn" onclick="handleLogin()">Login / Sign Up</button>
+  </div>
+
+  <!-- 2. USER DASHBOARD SECTION -->
+  <div id="userSection" class="card hidden">
+    <div class="flex-between">
+      <h3>👋 Welcome User</h3>
+      <button class="btn btn-red" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="handleLogout()">Logout</button>
+    </div>
+    <div style="margin: 15px 0; font-size: 20px;">
+      Balance: <span class="badge" id="userCoins">0 Coins</span>
+    </div>
+    <hr style="border-color: #1f293d; margin: 15px 0;">
+    
+    <h3>🔥 Available CPA Tasks</h3>
+    
+    <div class="task-item">
+      <h4>App Install Task</h4>
+      <p style="font-size: 13px; color: #9ca3af; margin: 4px 0;">ऐप डाउनलोड करें और 2 मिनट उपयोग करें।</p>
+      <div class="flex-between" style="margin-top: 8px;">
+        <span style="color: #10b981; font-weight: bold;">+150 Coins</span>
+        <button class="btn btn-green" style="width: auto; padding: 6px 14px;" onclick="completeTask('task_1', 150)">Complete</button>
+      </div>
+    </div>
+
+    <div class="task-item">
+      <h4>Survey Complete</h4>
+      <p style="font-size: 13px; color: #9ca3af; margin: 4px 0;">5 प्रश्नों का उत्तर दें।</p>
+      <div class="flex-between" style="margin-top: 8px;">
+        <span style="color: #10b981; font-weight: bold;">+300 Coins</span>
+        <button class="btn btn-green" style="width: auto; padding: 6px 14px;" onclick="completeTask('task_2', 300)">Complete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ADMIN PANEL SECTION -->
+  <div id="adminSection" class="card hidden" style="border-color: #f59e0b;">
+    <h3 style="color: #f59e0b;">⚡ Admin Controls</h3>
+    <label>Target User Email</label>
+    <input type="email" id="targetEmail" placeholder="user@example.com">
+    <label>Adjust Coins (+ or -)</label>
+    <input type="number" id="coinAdj" placeholder="e.g. 500 or -100">
+    <button class="btn" style="background: #f59e0b;" onclick="adminUpdateCoins()">Coins Update करें</button>
+  </div>
+
+</div>
+
+<script type="module">
+  import { 
+    auth, db, 
+    signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
+    doc, getDoc, setDoc, updateDoc, increment 
+  } from './firebase-config.js';
+
+  // Admin Check Logic (admin email set करें)
+  const ADMIN_EMAIL = "admin@cpa.com"; 
+
+  // Auth State Listener
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('userSection').classList.remove('hidden');
+      
+      if (user.email === ADMIN_EMAIL) {
+        document.getElementById('adminSection').classList.remove('hidden');
+      }
+      
+      loadUserData(user.uid, user.email);
+    } else {
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('userSection').classList.add('hidden');
+      document.getElementById('adminSection').classList.add('hidden');
+    }
+  });
+
+  // Login / Register Handler
+  window.handleLogin = async function() {
+    const email = document.getElementById('authEmail').value;
+    const pass = document.getElementById('authPass').value;
+    if(!email || !pass) return alert("Email और Password भरें!");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(err) {
+      // User doesn't exist, Create new
+      try {
+        const res = await createUserWithEmailAndPassword(auth, email, pass);
+        await setDoc(doc(db, "users", res.user.uid), {
+          email: email,
+          coins: 0,
+          completedTasks: []
+        });
+      } catch(createErr) {
+        alert("Authentication Error: " + createErr.message);
+      }
+    }
+  };
+
+  // Logout Handler
+  window.handleLogout = () => signOut(auth);
+
+  // Load Balance
+  async function loadUserData(uid, email) {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    if(snap.exists()) {
+      document.getElementById('userCoins').innerText = (snap.data().coins || 0) + " Coins";
+    } else {
+      await setDoc(userRef, { email: email, coins: 0, completedTasks: [] });
+      document.getElementById('userCoins').innerText = "0 Coins";
+    }
+  }
+
+  // Complete CPA Task Handler
+  window.completeTask = async function(taskId, reward) {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        coins: increment(reward)
+      });
+      alert(`🎉 Task Done! +${reward} Coins Added.`);
+      loadUserData(user.uid, user.email);
+    } catch(err) {
+      alert("Task complete fail: " + err.message);
+    }
+  };
+
+  // Admin Coins Update Handler
+  window.adminUpdateCoins = async function() {
+    const targetEmail = document.getElementById('targetEmail').value;
+    const amount = parseInt(document.getElementById('coinAdj').value);
+    if(!targetEmail || isNaN(amount)) return alert("Valid Email और Amount लिखें!");
+
+    alert("Admin processing... (इन्हें Firestore Queries के थ्रू डायरेक्ट कनेक्ट किया जा सकता है)");
+  };
+</script>
+
+</body>
+</html>
