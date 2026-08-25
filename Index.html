@@ -5,78 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CPA Rewards Hub</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background: #0b0f19; color: #f3f4f6; min-height: 100vh; padding: 15px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: #0f172a; color: #f8fafc; min-height: 100vh; padding: 15px; }
     .container { max-width: 500px; margin: 0 auto; }
-    .card { background: #161e2e; border: 1px solid #1f293d; border-radius: 14px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 20px; margin-bottom: 15px; }
     h2, h3 { color: #38bdf8; margin-bottom: 12px; }
-    input { width: 100%; padding: 12px; margin: 8px 0 16px; border-radius: 8px; border: 1px solid #374151; background: #0b0f19; color: #fff; font-size: 15px; }
-    .btn { background: #2563eb; color: #fff; border: none; padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .btn:hover { background: #1d4ed8; }
+    input { width: 100%; padding: 12px; margin: 8px 0 16px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+    .btn { background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 5px; }
     .btn-green { background: #10b981; }
-    .btn-green:hover { background: #059669; }
     .btn-red { background: #ef4444; }
-    .btn:disabled { background: #4b5563; cursor: not-allowed; }
+    .btn-orange { background: #f59e0b; color: #000; }
     .flex-between { display: flex; justify-content: space-between; align-items: center; }
-    .badge { background: #0284c7; padding: 4px 10px; border-radius: 20px; font-size: 14px; font-weight: bold; }
-    .task-item { border-left: 4px solid #38bdf8; background: #1f293d; padding: 12px; border-radius: 6px; margin: 10px 0; }
+    .badge { background: #0284c7; padding: 6px 14px; border-radius: 20px; font-weight: bold; }
+    .task-item { border-left: 4px solid #38bdf8; background: #0f172a; padding: 12px; border-radius: 6px; margin: 10px 0; }
     .hidden { display: none; }
+    .uid-tag { font-size: 11px; color: #64748b; margin-top: 4px; word-break: break-all; }
   </style>
 </head>
 <body>
 
 <div class="container">
 
-  <!-- 1. AUTH / LOGIN SECTION -->
+  <!-- AUTH SECTION -->
   <div id="authSection" class="card">
     <h2>🔐 CPA Rewards Login</h2>
     <label>Email</label>
     <input type="email" id="authEmail" placeholder="user@example.com">
     <label>Password</label>
     <input type="password" id="authPass" placeholder="******">
-    <button class="btn" onclick="handleLogin()">Login / Sign Up</button>
+    <button class="btn" onclick="handleAuth()">Login / Account बनाएं</button>
   </div>
 
-  <!-- 2. USER DASHBOARD SECTION -->
+  <!-- USER DASHBOARD -->
   <div id="userSection" class="card hidden">
     <div class="flex-between">
       <h3>👋 Welcome User</h3>
       <button class="btn btn-red" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="handleLogout()">Logout</button>
     </div>
-    <div style="margin: 15px 0; font-size: 20px;">
-      Balance: <span class="badge" id="userCoins">0 Coins</span>
+    
+    <div class="uid-tag" id="uidDisplay">UID: Loading...</div>
+
+    <div style="margin: 15px 0; font-size: 20px;" class="flex-between">
+      <span>Balance:</span>
+      <span class="badge" id="userCoins">0 Coins</span>
     </div>
-    <hr style="border-color: #1f293d; margin: 15px 0;">
+
+    <!-- DAILY BONUS & WITHDRAW BUTTONS -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <button class="btn btn-orange" style="font-size: 14px;" onclick="claimDailyBonus()">🎁 Daily Bonus (+50)</button>
+      <button class="btn btn-green" style="font-size: 14px;" onclick="requestWithdrawal()">💸 Withdraw</button>
+    </div>
+
+    <hr style="border-color: #334155; margin: 15px 0;">
     
     <h3>🔥 Available CPA Tasks</h3>
-    
-    <div class="task-item">
-      <h4>App Install Task</h4>
-      <p style="font-size: 13px; color: #9ca3af; margin: 4px 0;">ऐप डाउनलोड करें और 2 मिनट उपयोग करें।</p>
-      <div class="flex-between" style="margin-top: 8px;">
-        <span style="color: #10b981; font-weight: bold;">+150 Coins</span>
-        <button class="btn btn-green" style="width: auto; padding: 6px 14px;" onclick="completeTask('task_1', 150)">Complete</button>
-      </div>
+    <div id="taskList">
+      <p style="color: #94a3b8; font-size: 14px;">Tasks लोड हो रहे हैं...</p>
     </div>
-
-    <div class="task-item">
-      <h4>Survey Complete</h4>
-      <p style="font-size: 13px; color: #9ca3af; margin: 4px 0;">5 प्रश्नों का उत्तर दें।</p>
-      <div class="flex-between" style="margin-top: 8px;">
-        <span style="color: #10b981; font-weight: bold;">+300 Coins</span>
-        <button class="btn btn-green" style="width: auto; padding: 6px 14px;" onclick="completeTask('task_2', 300)">Complete</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3. ADMIN PANEL SECTION -->
-  <div id="adminSection" class="card hidden" style="border-color: #f59e0b;">
-    <h3 style="color: #f59e0b;">⚡ Admin Controls</h3>
-    <label>Target User Email</label>
-    <input type="email" id="targetEmail" placeholder="user@example.com">
-    <label>Adjust Coins (+ or -)</label>
-    <input type="number" id="coinAdj" placeholder="e.g. 500 or -100">
-    <button class="btn" style="background: #f59e0b;" onclick="adminUpdateCoins()">Coins Update करें</button>
   </div>
 
 </div>
@@ -85,92 +70,151 @@
   import { 
     auth, db, 
     signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
-    doc, getDoc, setDoc, updateDoc, increment 
+    doc, getDoc, setDoc, updateDoc, collection, getDocs, increment 
   } from './firebase-config.js';
 
-  // Admin Check Logic (admin email set करें)
-  const ADMIN_EMAIL = "admin@cpa.com"; 
-
-  // Auth State Listener
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       document.getElementById('authSection').classList.add('hidden');
       document.getElementById('userSection').classList.remove('hidden');
-      
-      if (user.email === ADMIN_EMAIL) {
-        document.getElementById('adminSection').classList.remove('hidden');
-      }
+      document.getElementById('uidDisplay').innerText = "YOUR UID: " + user.uid;
       
       loadUserData(user.uid, user.email);
+      loadLiveTasks();
     } else {
       document.getElementById('authSection').classList.remove('hidden');
       document.getElementById('userSection').classList.add('hidden');
-      document.getElementById('adminSection').classList.add('hidden');
     }
   });
 
-  // Login / Register Handler
-  window.handleLogin = async function() {
-    const email = document.getElementById('authEmail').value;
-    const pass = document.getElementById('authPass').value;
-    if(!email || !pass) return alert("Email और Password भरें!");
+  window.handleAuth = async function() {
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value.trim();
+    if(!email || !pass) return alert("Email और Password दोनों भरें!");
 
     try {
       await signInWithEmailAndPassword(auth, email, pass);
     } catch(err) {
-      // User doesn't exist, Create new
       try {
         const res = await createUserWithEmailAndPassword(auth, email, pass);
-        await setDoc(doc(db, "users", res.user.uid), {
-          email: email,
-          coins: 0,
-          completedTasks: []
-        });
+        await setDoc(doc(db, "users", res.user.uid), { email: email, coins: 0 });
       } catch(createErr) {
-        alert("Authentication Error: " + createErr.message);
+        alert("Auth Error: " + createErr.message);
       }
     }
   };
 
-  // Logout Handler
   window.handleLogout = () => signOut(auth);
 
-  // Load Balance
   async function loadUserData(uid, email) {
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
     if(snap.exists()) {
       document.getElementById('userCoins').innerText = (snap.data().coins || 0) + " Coins";
     } else {
-      await setDoc(userRef, { email: email, coins: 0, completedTasks: [] });
+      await setDoc(userRef, { email: email, coins: 0 });
       document.getElementById('userCoins').innerText = "0 Coins";
     }
   }
 
-  // Complete CPA Task Handler
-  window.completeTask = async function(taskId, reward) {
+  // DAILY BONUS FEATURE
+  window.claimDailyBonus = async function() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    const userData = snap.data();
+
+    const now = Date.now();
+    const lastClaim = userData.lastDailyBonus || 0;
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (now - lastClaim < oneDay) {
+      const hoursLeft = Math.ceil((oneDay - (now - lastClaim)) / (1000 * 60 * 60));
+      return alert(`बोनस क्लेम हो चुका है! ${hoursLeft} घंटे बाद दोबारा आएं।`);
+    }
+
+    await updateDoc(userRef, {
+      coins: increment(50),
+      lastDailyBonus: now
+    });
+
+    alert("🎉 +50 Daily Bonus Coins मिल गए!");
+    loadUserData(user.uid, user.email);
+  };
+
+  // WITHDRAWAL FEATURE
+  window.requestWithdrawal = async function() {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    const upiId = prompt("अपनी UPI ID दर्ज करें:");
+    const coinsToRedeem = parseInt(prompt("कितने कॉइन्स रिडीम करने हैं? (Min: 500)"));
+
+    if (!upiId || isNaN(coinsToRedeem) || coinsToRedeem < 500) {
+      return alert("कम से कम 500 Coins होना ज़रूरी है!");
+    }
+
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    
+    if ((snap.data().coins || 0) < coinsToRedeem) {
+      return alert("आपके पास पर्याप्त Coins नहीं हैं!");
+    }
+
+    await updateDoc(userRef, { coins: increment(-coinsToRedeem) });
+    await setDoc(doc(db, "withdrawals", "req_" + Date.now()), {
+      uid: user.uid,
+      email: user.email,
+      upiId: upiId,
+      coins: coinsToRedeem,
+      status: "Pending",
+      createdAt: new Date().toISOString()
+    });
+
+    alert("✅ Withdrawal Request भेजी गई! Admin जल्द प्रोसेस करेगा।");
+    loadUserData(user.uid, user.email);
+  };
+
+  // LOAD TASKS
+  async function loadLiveTasks() {
+    const taskContainer = document.getElementById('taskList');
+    try {
+      const querySnap = await getDocs(collection(db, "tasks"));
+      taskContainer.innerHTML = "";
+      
+      if(querySnap.empty) {
+        taskContainer.innerHTML = "<p style='color: #94a3b8;'>अभी कोई नया Task उपलब्ध नहीं है।</p>";
+        return;
+      }
+
+      querySnap.forEach((taskDoc) => {
+        const task = taskDoc.data();
+        const item = document.createElement('div');
+        item.className = 'task-item';
+        item.innerHTML = `
+          <h4>${task.title}</h4>
+          <div class="flex-between" style="margin-top: 10px;">
+            <span style="color: #10b981; font-weight: bold;">+${task.reward} Coins</span>
+            <button class="btn btn-green" style="width: auto; padding: 6px 14px;" onclick="claimTask('${task.link}', ${task.reward})">Complete Task</button>
+          </div>
+        `;
+        taskContainer.appendChild(item);
+      });
+    } catch(e) { console.error(e); }
+  }
+
+  window.claimTask = async function(link, reward) {
+    window.open(link, '_blank');
     const user = auth.currentUser;
     if(!user) return;
 
     try {
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        coins: increment(reward)
-      });
-      alert(`🎉 Task Done! +${reward} Coins Added.`);
+      await updateDoc(doc(db, "users", user.uid), { coins: increment(reward) });
+      alert(`🎉 Congratulation! +${reward} Coins जुड़ गए।`);
       loadUserData(user.uid, user.email);
-    } catch(err) {
-      alert("Task complete fail: " + err.message);
-    }
-  };
-
-  // Admin Coins Update Handler
-  window.adminUpdateCoins = async function() {
-    const targetEmail = document.getElementById('targetEmail').value;
-    const amount = parseInt(document.getElementById('coinAdj').value);
-    if(!targetEmail || isNaN(amount)) return alert("Valid Email और Amount लिखें!");
-
-    alert("Admin processing... (इन्हें Firestore Queries के थ्रू डायरेक्ट कनेक्ट किया जा सकता है)");
+    } catch(err) { alert("Task processing failed: " + err.message); }
   };
 </script>
 
