@@ -22,12 +22,15 @@
     .hidden { display: none; }
     .uid-tag { font-size: 11px; color: #64748b; margin-top: 4px; word-break: break-all; }
   </style>
+
+  <!-- 1. config.js को यहाँ लोड किया -->
+  <script src="./config.js"></script>
 </head>
 <body>
 
 <div class="container">
 
-  <!-- AUTH SECTION (LOGIN & REGISTER) -->
+  <!-- AUTH SECTION -->
   <div id="authSection" class="card">
     <h2>🔐 CPA Rewards Login</h2>
     <label>Email Address</label>
@@ -41,7 +44,7 @@
     </div>
   </div>
 
-  <!-- USER DASHBOARD -->
+  <!-- DASHBOARD -->
   <div id="userSection" class="card hidden">
     <div class="flex-between">
       <h3>👋 Welcome User</h3>
@@ -55,7 +58,6 @@
       <span class="badge" id="userCoins">0 Coins</span>
     </div>
 
-    <!-- DAILY BONUS & WITHDRAW BUTTONS -->
     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
       <button class="btn btn-orange" style="font-size: 14px;" onclick="claimDailyBonus()">🎁 Daily Bonus (+50)</button>
       <button class="btn btn-green" style="font-size: 14px;" onclick="requestWithdrawal()">💸 Withdraw</button>
@@ -71,12 +73,20 @@
 
 </div>
 
+<!-- FIREBASE MODULE SCRIPT -->
 <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { 
-    auth, db, 
-    signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
-    doc, getDoc, setDoc, updateDoc, collection, getDocs, increment 
-  } from './firebase-config.js';
+    getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { 
+    getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, increment 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // Config config.js से आ रही है
+  const app = initializeApp(window.firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
   // AUTH STATE MONITORING
   onAuthStateChanged(auth, async (user) => {
@@ -107,7 +117,7 @@
     }
   };
 
-  // REGISTER (CREATE ACCOUNT) FUNCTION
+  // REGISTER FUNCTION
   window.handleRegister = async function() {
     const email = document.getElementById('authEmail').value.trim();
     const pass = document.getElementById('authPass').value.trim();
@@ -121,7 +131,7 @@
         coins: 0,
         createdAt: new Date().toISOString()
       });
-      alert("🎉 Account सफलतापूर्वक बन गया!");
+      alert("🎉 Account सफलता से बन गया!");
     } catch(err) {
       alert("Registration Error: " + err.message);
     }
@@ -142,7 +152,7 @@
     }
   }
 
-  // DAILY BONUS FEATURE
+  // DAILY BONUS
   window.claimDailyBonus = async function() {
     const user = auth.currentUser;
     if (!user) return;
@@ -169,7 +179,7 @@
     loadUserData(user.uid, user.email);
   };
 
-  // WITHDRAWAL REQUEST FEATURE
+  // WITHDRAWAL
   window.requestWithdrawal = async function() {
     const user = auth.currentUser;
     if(!user) return;
@@ -198,7 +208,7 @@
       createdAt: new Date().toISOString()
     });
 
-    alert("✅ Withdrawal Request भेजी गई! Admin जल्द प्रोसेस करेगा।");
+    alert("✅ Withdrawal Request भेजी गई!");
     loadUserData(user.uid, user.email);
   };
 
