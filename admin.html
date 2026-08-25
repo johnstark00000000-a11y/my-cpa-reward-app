@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPA Admin Control Panel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: #0f172a; color: #f8fafc; padding: 15px; min-height: 100vh; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    h2, h3 { color: #f59e0b; margin-bottom: 15px; }
+    label { font-size: 13px; color: #94a3b8; display: block; margin-top: 10px; }
+    input { width: 100%; padding: 12px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 15px; }
+    .btn { background: #f59e0b; color: #000; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .btn:hover { background: #d97706; }
+    .btn-red { background: #ef4444; color: #fff; }
+    .btn-green { background: #10b981; color: #fff; }
+    .hidden { display: none; }
+    .user-box { background: #0f172a; padding: 12px; border-radius: 8px; margin-top: 10px; border: 1px solid #334155; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 1. ADMIN LOGIN SECTION -->
+  <div id="adminLoginCard" class="card">
+    <h2>🔐 Admin Access Only</h2>
+    <label>Admin Secret Key / Password</label>
+    <input type="password" id="adminPassInput" placeholder="Enter Admin Password">
+    <button class="btn" onclick="checkAdminPass()">Login to Control Panel</button>
+  </div>
+
+  <!-- 2. ADMIN DASHBOARD (Hidden by Default) -->
+  <div id="adminDashboard" class="hidden">
+    
+    <!-- User Management Card -->
+    <div class="card">
+      <h3>👤 User Control & Balance</h3>
+      
+      <label>User UID या Email सर्च करें</label>
+      <input type="text" id="targetUserId" placeholder="Paste User UID (e.g. 8xK9z...)">
+      
+      <div style="display: flex; gap: 10px;">
+        <div style="flex: 1;">
+          <label>Add/Cut Coins</label>
+          <input type="number" id="coinAmount" placeholder="e.g. 500 or -200">
+        </div>
+      </div>
+
+      <button class="btn btn-green" onclick="updateUserCoins()">Update User Balance</button>
+    </div>
+
+    <!-- Task Manager Card -->
+    <div class="card">
+      <h3>📋 CPA Task Manager</h3>
+      
+      <label>Task Title</label>
+      <input type="text" id="taskTitle" placeholder="e.g. Download App X">
+      
+      <label>Reward Coins</label>
+      <input type="number" id="taskReward" placeholder="e.g. 200">
+      
+      <label>Task Link (CPA Link)</label>
+      <input type="text" id="taskLink" placeholder="https://cpa-offer-link.com">
+
+      <button class="btn" onclick="createNewTask()">Publish New Task</button>
+    </div>
+
+    <button class="btn btn-red" onclick="adminLogout()" style="margin-top: 10px;">Logout Admin</button>
+
+  </div>
+
+</div>
+
+<script type="module">
+  import { db, doc, getDoc, updateDoc, setDoc, increment } from './firebase-config.js';
+
+  // 🔴 अपना Admin Passcode यहाँ सेट करें
+  const ADMIN_SECRET = "admin1234"; 
+
+  window.checkAdminPass = function() {
+    const enteredPass = document.getElementById('adminPassInput').value;
+    if (enteredPass === ADMIN_SECRET) {
+      document.getElementById('adminLoginCard').classList.add('hidden');
+      document.getElementById('adminDashboard').classList.remove('hidden');
+    } else {
+      alert("गलत Password! Access Denied.");
+    }
+  };
+
+  window.adminLogout = function() {
+    document.getElementById('adminLoginCard').classList.remove('hidden');
+    document.getElementById('adminDashboard').classList.add('hidden');
+    document.getElementById('adminPassInput').value = "";
+  };
+
+  // User Coins Update Logic
+  window.updateUserCoins = async function() {
+    const uid = document.getElementById('targetUserId').value.trim();
+    const amount = parseInt(document.getElementById('coinAmount').value);
+
+    if (!uid || isNaN(amount)) return alert("User ID और Amount दोनों भरें!");
+
+    try {
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        return alert("यह User UID Firestore में नहीं मिला!");
+      }
+
+      await updateDoc(userRef, {
+        coins: increment(amount)
+      });
+
+      alert(`Success! User (${uid}) का बैलेंस ${amount} Coins से अपडेट कर दिया गया है।`);
+      document.getElementById('coinAmount').value = "";
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  // Create New CPA Task in Firestore
+  window.createNewTask = async function() {
+    const title = document.getElementById('taskTitle').value.trim();
+    const reward = parseInt(document.getElementById('taskReward').value);
+    const link = document.getElementById('taskLink').value.trim();
+
+    if (!title || isNaN(reward) || !link) return alert("Task की पूरी डिटेल्स भरें!");
+
+    try {
+      const taskId = "task_" + Date.now();
+      await setDoc(doc(db, "tasks", taskId), {
+        title: title,
+        reward: reward,
+        link: link,
+        createdAt: new Date().toISOString()
+      });
+
+      alert("🎉 नया Task Live हो गया!");
+      document.getElementById('taskTitle').value = "";
+      document.getElementById('taskReward').value = "";
+      document.getElementById('taskLink').value = "";
+    } catch (err) {
+      alert("Task Add करने में एरर: " + err.message);
+    }
+  };
+</script>
+
+</body>
+</html>
