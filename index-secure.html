@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  
+  <!-- ✅ SECURITY HEADERS -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://www.gstatic.com https://www.googleapis.com; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta referrer="strict-origin-when-cross-origin">
+  
+  <title>CPA Rewards Hub - Secure Edition</title>
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: #0f172a; color: #f8fafc; min-height: 100vh; padding: 15px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 20px; margin-bottom: 15px; }
+    h2, h3 { color: #38bdf8; margin-bottom: 12px; }
+    label { font-size: 14px; color: #94a3b8; display: block; margin-top: 10px; }
+    input { width: 100%; padding: 12px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+    input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 5px #38bdf8; }
+    .btn { background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: all 0.3s; }
+    .btn:hover { background: #1d4ed8; transform: translateY(-2px); }
+    .btn:disabled { background: #64748b; cursor: not-allowed; }
+    .btn-green { background: #10b981; }
+    .btn-green:hover { background: #059669; }
+    .btn-red { background: #ef4444; }
+    .btn-red:hover { background: #dc2626; }
+    .btn-orange { background: #f59e0b; color: #000; }
+    .btn-orange:hover { background: #d97706; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .badge { background: #0284c7; padding: 6px 14px; border-radius: 20px; font-weight: bold; }
+    .task-item { border-left: 4px solid #38bdf8; background: #0f172a; padding: 12px; border-radius: 6px; margin: 10px 0; }
+    .hidden { display: none; }
+    .uid-tag { font-size: 11px; color: #64748b; margin-top: 4px; word-break: break-all; }
+    .error-msg { color: #ef4444; font-size: 14px; margin-top: 8px; padding: 8px; background: #1e293b; border-left: 3px solid #ef4444; border-radius: 4px; }
+    .success-msg { color: #10b981; font-size: 14px; margin-top: 8px; padding: 8px; background: #1e293b; border-left: 3px solid #10b981; border-radius: 4px; }
+    .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #64748b; border-top: 2px solid #38bdf8; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .password-strength { font-size: 12px; margin-top: 4px; }
+    .password-strength.weak { color: #ef4444; }
+    .password-strength.medium { color: #f59e0b; }
+    .password-strength.strong { color: #10b981; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- AUTH SECTION -->
+  <div id="authSection" class="card">
+    <h2>🔐 CPA Rewards Hub</h2>
+    
+    <!-- Login Tab -->
+    <div id="loginTab">
+      <h3 style="color: #94a3b8; font-size: 16px; margin-bottom: 15px;">लॉगिन करें</h3>
+      
+      <label>Email Address</label>
+      <input type="email" id="authEmail" placeholder="user@example.com" autocomplete="email">
+      
+      <label>Password</label>
+      <input type="password" id="authPass" placeholder="••••••••" autocomplete="current-password">
+      
+      <div id="loginError" class="hidden error-msg"></div>
+      
+      <button id="loginBtn" class="btn" onclick="handleLogin()">Login</button>
+      
+      <p style="text-align: center; margin-top: 15px; font-size: 14px;">
+        खाता नहीं है? <span style="color: #38bdf8; cursor: pointer; text-decoration: underline;" onclick="switchTab('register')">Sign Up करें</span>
+      </p>
+    </div>
+    
+    <!-- Register Tab -->
+    <div id="registerTab" class="hidden">
+      <h3 style="color: #94a3b8; font-size: 16px; margin-bottom: 15px;">नया खाता बनाएं</h3>
+      
+      <label>Email Address</label>
+      <input type="email" id="regEmail" placeholder="user@example.com" autocomplete="email">
+      
+      <label>Password (कम से कम 8 अक्षर)</label>
+      <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password" oninput="checkPasswordStrength()">
+      <div id="passwordStrength" class="password-strength"></div>
+      
+      <label>Confirm Password</label>
+      <input type="password" id="regPassConfirm" placeholder="••••••••" autocomplete="new-password">
+      
+      <div id="registerError" class="hidden error-msg"></div>
+      
+      <button id="registerBtn" class="btn btn-green" onclick="handleRegister()">Create Account</button>
+      
+      <p style="text-align: center; margin-top: 15px; font-size: 14px;">
+        पहले से खाता है? <span style="color: #38bdf8; cursor: pointer; text-decoration: underline;" onclick="switchTab('login')">Login करें</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD SECTION -->
+  <div id="userSection" class="card hidden">
+    <div class="flex-between">
+      <h3>👋 Welcome</h3>
+      <button class="btn btn-red" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="handleLogout()">Logout</button>
+    </div>
+    
+    <div class="uid-tag" id="uidDisplay">UID: Loading...</div>
+    
+    <div style="margin: 15px 0; font-size: 20px;" class="flex-between">
+      <span>Balance:</span>
+      <span class="badge" id="userCoins">0 Coins</span>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <button class="btn btn-orange" style="font-size: 14px;" onclick="claimDailyBonus()" id="bonusBtn">🎁 Daily Bonus (+50)</button>
+      <button class="btn btn-green" style="font-size: 14px;" onclick="requestWithdrawal()" id="withdrawBtn">💸 Withdraw</button>
+    </div>
+
+    <div id="dashboardMessage" class="hidden error-msg"></div>
+
+    <hr style="border-color: #334155; margin: 15px 0;">
+    
+    <h3>🔥 Available CPA Tasks</h3>
+    <div id="taskList">
+      <p style="color: #94a3b8; font-size: 14px;">Tasks लोड हो रहे हैं...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ SECURE FIREBASE MODULE SCRIPT -->
+<script type="module">
+  import { 
+    auth, db,
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged,
+    doc, 
+    getDoc, 
+    setDoc, 
+    updateDoc, 
+    collection, 
+    getDocs, 
+    increment 
+  } from './firebase-config-secure.js';
+  
+  import {
+    validators,
+    RateLimiter,
+    generateCSRFToken,
+    SecureStorage,
+    errorHandler,
+    Logger,
+    DuplicateRequestPreventer
+  } from './security-utils.js';
+
+  // ✅ Initialize security
+  const rateLimiter = new RateLimiter();
+  const duplicatePreventively = new DuplicateRequestPreventer();
+  
+  // Generate and store CSRF token
+  window.csrfToken = generateCSRFToken();
+  
+  Logger.log('APP_LOADED', { timestamp: new Date().toISOString() });
+
+  // ✅ TAB SWITCHING
+  window.switchTab = function(tab) {
+    document.getElementById('loginTab').classList.add('hidden');
+    document.getElementById('registerTab').classList.add('hidden');
+    document.getElementById(tab + 'Tab').classList.remove('hidden');
+    clearErrors();
+  };
+
+  // ✅ PASSWORD STRENGTH CHECKER
+  window.checkPasswordStrength = function() {
+    const pass = document.getElementById('regPass').value;
+    const strengthDiv = document.getElementById('passwordStrength');
+    
+    let strength = 'weak';
+    let message = '❌ कमजोर';
+    
+    if (pass.length >= 8) {
+      const hasUpper = /[A-Z]/.test(pass);
+      const hasLower = /[a-z]/.test(pass);
+      const hasNum = /\d/.test(pass);
+      
+      const score = (hasUpper ? 1 : 0) + (hasLower ? 1 : 0) + (hasNum ? 1 : 0);
+      
+      if (score >= 3) {
+        strength = 'strong';
+        message = '✅ मजबूत';
+      } else if (score >= 2) {
+        strength = 'medium';
+        message = '⚠️ सामान्य';
+      }
+    }
+    
+    strengthDiv.textContent = message;
+    strengthDiv.className = 'password-strength ' + strength;
+  };
+
+  // ✅ ERROR DISPLAY
+  function showError(containerId, message) {
+    const container = document.getElementById(containerId);
+    container.textContent = message;
+    container.classList.remove('hidden');
+  }
+
+  function clearErrors() {
+    document.getElementById('loginError').classList.add('hidden');
+    document.getElementById('registerError').classList.add('hidden');
+  }
+
+  // ✅ LOGIN FUNCTION (with rate limiting)
+  window.handleLogin = async function() {
+    clearErrors();
+    
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value.trim();
+    const loginBtn = document.getElementById('loginBtn');
+    
+    // Validation
+    if (!email || !pass) {
+      showError('loginError', '❌ Email और Password दोनों भरें!');
+      return;
+    }
+    
+    if (!validators.isValidEmail(email)) {
+      showError('loginError', '❌ Email की जानकारी गलत है');
+      return;
+    }
+    
+    // Rate limiting
+    if (!rateLimiter.isAllowed('login_' + email)) {
+      const remaining = rateLimiter.getRemainingTime('login_' + email);
+      showError('loginError', `❌ बहुत सारे प्रयास! ${remaining} सेकंड बाद आएं।`);
+      return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="loading-spinner"></span>Logging in...';
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      Logger.log('LOGIN_SUCCESS', { email });
+      showError('loginError', '✅ लॉगिन सफल!');
+      // UI update will happen via onAuthStateChanged
+    } catch (err) {
+      Logger.error('LOGIN_FAILED', err);
+      const userMessage = errorHandler.getUserMessage(err);
+      showError('loginError', '❌ ' + userMessage);
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.innerHTML = 'Login';
+    }
+  };
+
+  // ✅ REGISTER FUNCTION
+  window.handleRegister = async function() {
+    clearErrors();
+    
+    const email = document.getElementById('regEmail').value.trim();
+    const pass = document.getElementById('regPass').value;
+    const passConfirm = document.getElementById('regPassConfirm').value;
+    const registerBtn = document.getElementById('registerBtn');
+    
+    // Validation
+    if (!email || !pass || !passConfirm) {
+      showError('registerError', '❌ सभी फील्ड भरें!');
+      return;
+    }
+    
+    if (!validators.isValidEmail(email)) {
+      showError('registerError', '❌ Email की जानकारी गलत है');
+      return;
+    }
+    
+    if (!validators.isValidPassword(pass)) {
+      showError('registerError', '❌ पासवर्ड कमजोर है। कम से कम 8 अक्षर, 1 बड़ा, 1 छोटा, 1 नंबर चाहिए');
+      return;
+    }
+    
+    if (pass !== passConfirm) {
+      showError('registerError', '❌ पासवर्ड मेल नहीं खाते!');
+      return;
+    }
+
+    registerBtn.disabled = true;
+    registerBtn.innerHTML = '<span class="loading-spinner"></span>Creating...';
+
+    try {
+      const res = await createUserWithEmailAndPassword(auth, email, pass);
+      
+      // Set initial user data
+      await setDoc(doc(db, "users", res.user.uid), {
+        email: email,
+        coins: 0,
+        createdAt: new Date().toISOString(),
+        lastDailyBonus: 0,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      Logger.log('REGISTRATION_SUCCESS', { email, uid: res.user.uid });
+      showError('registerError', '🎉 Account बन गया! अब Login करें।');
+      
+      setTimeout(() => switchTab('login'), 2000);
+    } catch (err) {
+      Logger.error('REGISTRATION_FAILED', err);
+      const userMessage = errorHandler.getUserMessage(err);
+      showError('registerError', '❌ ' + userMessage);
+    } finally {
+      registerBtn.disabled = false;
+      registerBtn.innerHTML = 'Create Account';
+    }
+  };
+
+  // ✅ LOGOUT
+  window.handleLogout = async function() {
+    try {
+      await signOut(auth);
+      SecureStorage.clear();
+      Logger.log('LOGOUT', { timestamp: new Date().toISOString() });
+    } catch (err) {
+      Logger.error('LOGOUT_FAILED', err);
+    }
+  };
+
+  // ✅ AUTH STATE MONITORING
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('userSection').classList.remove('hidden');
+      document.getElementById('uidDisplay').innerText = "YOUR UID: " + user.uid.substring(0, 20) + "...";
+      
+      loadUserData(user.uid, user.email);
+      loadLiveTasks();
+      Logger.log('USER_AUTHENTICATED', { uid: user.uid });
+    } else {
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('userSection').classList.add('hidden');
+    }
+  });
+
+  // ✅ LOAD USER DATA
+  async function loadUserData(uid, email) {
+    try {
+      const userRef = doc(db, "users", uid);
+      const snap = await getDoc(userRef);
+      
+      if (snap.exists()) {
+        const coins = snap.data().coins || 0;
+        document.getElementById('userCoins').innerText = coins + " Coins";
+        SecureStorage.set('userBalance', coins);
+      } else {
+        await setDoc(userRef, {
+          email: email,
+          coins: 0,
+          createdAt: new Date().toISOString()
+        });
+        document.getElementById('userCoins').innerText = "0 Coins";
+      }
+    } catch (err) {
+      Logger.error('LOAD_USER_DATA', err);
+      console.error(err);
+    }
+  }
+
+  // ✅ DAILY BONUS (with server-side validation via Cloud Function)
+  window.claimDailyBonus = async function() {
+    const bonusBtn = document.getElementById('bonusBtn');
+    const dashMsg = document.getElementById('dashboardMessage');
+    const user = auth.currentUser;
+    
+    if (!user) return;
+
+    // Rate limiting
+    if (!rateLimiter.isAllowed('daily_bonus_' + user.uid)) {
+      dashMsg.textContent = '❌ बहुत तेजी से प्रयास कर रहे हैं!';
+      dashMsg.classList.remove('hidden');
+      return;
+    }
+
+    bonusBtn.disabled = true;
+    bonusBtn.innerHTML = '<span class="loading-spinner"></span>Claiming...';
+
+    try {
+      // In production, call Cloud Function instead:
+      // const result = await callCloudFunction('claimDailyBonus', {});
+      
+      // For now, frontend validation:
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+      const userData = snap.data();
+
+      const now = Date.now();
+      const lastClaim = userData.lastDailyBonus || 0;
+      const oneDay = 24 * 60 * 60 * 1000;
+
+      if (now - lastClaim < oneDay) {
+        const hoursLeft = Math.ceil((oneDay - (now - lastClaim)) / (1000 * 60 * 60));
+        dashMsg.textContent = `❌ बोनस पहले ही क्लेम हो चुका है! ${hoursLeft} घंटे बाद दोबारा आएं।`;
+        dashMsg.classList.remove('hidden');
+        return;
+      }
+
+      const bonusAmount = parseInt(import.meta.env.VITE_DAILY_BONUS_AMOUNT) || 50;
+      await updateDoc(userRef, {
+        coins: increment(bonusAmount),
+        lastDailyBonus: now
+      });
+
+      Logger.log('DAILY_BONUS_CLAIMED', { amount: bonusAmount });
+      dashMsg.textContent = `🎉 +${bonusAmount} Coins मिल गए!`;
+      dashMsg.classList.remove('hidden');
+      
+      loadUserData(user.uid, user.email);
+    } catch (err) {
+      Logger.error('CLAIM_DAILY_BONUS', err);
+      dashMsg.textContent = '❌ ' + errorHandler.getUserMessage(err);
+      dashMsg.classList.remove('hidden');
+    } finally {
+      bonusBtn.disabled = false;
+      bonusBtn.innerHTML = '🎁 Daily Bonus (+50)';
+    }
+  };
+
+  // ✅ WITHDRAWAL REQUEST
+  window.requestWithdrawal = async function() {
+    const user = auth.currentUser;
+    const dashMsg = document.getElementById('dashboardMessage');
+    
+    if (!user) return;
+
+    const upiId = prompt("अपनी UPI ID दर्ज करें (उदा: name@upi):");
+    
+    if (!upiId) return;
+    
+    if (!validators.isValidUPI(upiId)) {
+      dashMsg.textContent = '❌ UPI ID की जानकारी गलत है (उदा: yourname@upi)';
+      dashMsg.classList.remove('hidden');
+      return;
+    }
+
+    const minCoins = parseInt(import.meta.env.VITE_MIN_WITHDRAWAL_COINS) || 500;
+    const coinsToRedeem = parseInt(prompt(`कितने कॉइन्स रिडीम करने हैं? (Min: ${minCoins})`));
+
+    if (!coinsToRedeem || coinsToRedeem < minCoins) {
+      dashMsg.textContent = `❌ कम से कम ${minCoins} Coins होना ज़रूरी है!`;
+      dashMsg.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+      const userBalance = snap.data().coins || 0;
+
+      if (userBalance < coinsToRedeem) {
+        dashMsg.textContent = '❌ आपके पास पर्याप्त Coins नहीं हैं!';
+        dashMsg.classList.remove('hidden');
+        return;
+      }
+
+      // Deduct coins
+      await updateDoc(userRef, { coins: increment(-coinsToRedeem) });
+      
+      // Create withdrawal request (server should validate this)
+      await setDoc(doc(db, "withdrawals", "req_" + Date.now()), {
+        uid: user.uid,
+        email: user.email,
+        upiId: validators.sanitize(upiId), // Sanitize before storing
+        coins: coinsToRedeem,
+        status: "Pending",
+        createdAt: new Date().toISOString()
+      });
+
+      Logger.log('WITHDRAWAL_REQUESTED', { coins: coinsToRedeem });
+      dashMsg.textContent = '✅ Withdrawal Request भेजी गई!';
+      dashMsg.classList.remove('hidden');
+      
+      loadUserData(user.uid, user.email);
+    } catch (err) {
+      Logger.error('REQUEST_WITHDRAWAL', err);
+      dashMsg.textContent = '❌ ' + errorHandler.getUserMessage(err);
+      dashMsg.classList.remove('hidden');
+    }
+  };
+
+  // ✅ LOAD TASKS
+  async function loadLiveTasks() {
+    const taskContainer = document.getElementById('taskList');
+    try {
+      const querySnap = await getDocs(collection(db, "tasks"));
+      taskContainer.innerHTML = "";
+      
+      if (querySnap.empty) {
+        taskContainer.innerHTML = "<p style='color: #94a3b8;'>अभी कोई नया Task उपलब्ध नहीं है।</p>";
+        return;
+      }
+
+      querySnap.forEach((taskDoc) => {
+        const task = taskDoc.data();
+        
+        // Validate task data
+        if (!task.title || !task.reward || !task.link) return;
+        
+        const item = document.createElement('div');
+        item.className = 'task-item';
+        
+        // Sanitize output to prevent XSS
+        const sanitizedTitle = validators.sanitize(task.title);
+        const reward = parseInt(task.reward) || 0;
+        
+        item.innerHTML = `
+          <h4>${sanitizedTitle}</h4>
+          <div class="flex-between" style="margin-top: 10px;">
+            <span style="color: #10b981; font-weight: bold;">+${reward} Coins</span>
+            <button class="btn btn-green" style="width: auto; padding: 6px 14px; font-size: 12px;" onclick="claimTask('${taskDoc.id}', ${reward})">Complete Task</button>
+          </div>
+        `;
+        taskContainer.appendChild(item);
+      });
+    } catch (e) {
+      Logger.error('LOAD_TASKS', e);
+      console.error(e);
+    }
+  }
+
+  // ✅ CLAIM TASK
+  window.claimTask = async function(taskId, reward) {
+    const user = auth.currentUser;
+    const dashMsg = document.getElementById('dashboardMessage');
+    
+    if (!user) return;
+
+    if (!taskId || typeof reward !== 'number' || reward < 0 || reward > 10000) {
+      dashMsg.textContent = '❌ Invalid task data';
+      dashMsg.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      // Open task link
+      window.open(`https://www.example.com/task?id=${encodeURIComponent(taskId)}`, '_blank');
+      
+      // In production, this should call a Cloud Function for validation
+      // For now, frontend update:
+      await updateDoc(doc(db, "users", user.uid), { coins: increment(reward) });
+      
+      Logger.log('TASK_CLAIMED', { taskId, reward });
+      dashMsg.textContent = `🎉 +${reward} Coins जुड़ गए!`;
+      dashMsg.classList.remove('hidden');
+      
+      loadUserData(user.uid, user.email);
+    } catch (err) {
+      Logger.error('CLAIM_TASK', err);
+      dashMsg.textContent = '❌ ' + errorHandler.getUserMessage(err);
+      dashMsg.classList.remove('hidden');
+    }
+  };
+
+  // Log page visibility changes
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      Logger.log('PAGE_HIDDEN', {});
+    } else {
+      Logger.log('PAGE_VISIBLE', {});
+    }
+  });
+</script>
+
+</body>
+</html>

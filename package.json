@@ -1,0 +1,33 @@
+{
+  "name": "cpa-rewards-secure",
+  "version": "1.0.0",
+  "description": "Secure CPA Rewards Hub Application",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && firebase deploy",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "emulate": "firebase emulators:start",
+    "logs:functions": "firebase functions:log",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "firebase": "^10.8.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "firebase-tools": "^13.0.0"
+  },
+  "keywords": [
+    "firebase",
+    "cpa",
+    "rewards",
+    "secure"
+  ],
+  "author": "",
+  "license": "MIT"
+}

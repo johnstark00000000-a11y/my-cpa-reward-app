@@ -1,0 +1,57 @@
+// ✅ FIRESTORE SECURITY RULES
+// Copy this entire content to: Firebase Console → Firestore → Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ✅ USERS COLLECTION: Only own data accessible
+    match /users/{userId} {
+      // Can only read/write own data
+      allow read, write: if request.auth.uid == userId;
+      
+      // Prevent modifying coins directly (must use Cloud Function)
+      allow update: if request.auth.uid == userId 
+                    && !request.resource.data.diff(resource.data)
+                       .affectedKeys()
+                       .hasAny(['coins', 'email', 'createdAt', 'lastDailyBonus']);
+    }
+    
+    // ✅ TASKS COLLECTION: Read-only for users, admin control
+    match /tasks/{taskId} {
+      // All users can read tasks
+      allow read: if request.auth != null;
+      
+      // Only admin can write (via Cloud Function)
+      allow write: if false;
+    }
+    
+    // ✅ WITHDRAWALS COLLECTION: Strict control
+    match /withdrawals/{withdrawalId} {
+      // Users can only read own withdrawals
+      allow read: if request.auth.uid == resource.data.uid;
+      
+      // Only Cloud Function can create withdrawals
+      allow create: if false;
+      
+      // Prevent any modifications
+      allow update, delete: if false;
+    }
+    
+    // ✅ ADMIN LOGS: Read-only for verification
+    match /admin_logs/{logId} {
+      allow read: if false; // Only server can access
+      allow write: if false;
+    }
+    
+    // ✅ RATE_LIMITS: Prevent abuse
+    match /rate_limits/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+    
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

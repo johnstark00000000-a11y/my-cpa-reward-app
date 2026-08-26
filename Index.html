@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPA Rewards Hub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: #0f172a; color: #f8fafc; min-height: 100vh; padding: 15px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 20px; margin-bottom: 15px; }
+    h2, h3 { color: #38bdf8; margin-bottom: 12px; }
+    label { font-size: 14px; color: #94a3b8; display: block; margin-top: 10px; }
+    input { width: 100%; padding: 12px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+    .btn { background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+    .btn-green { background: #10b981; }
+    .btn-red { background: #ef4444; }
+    .btn-orange { background: #f59e0b; color: #000; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .badge { background: #0284c7; padding: 6px 14px; border-radius: 20px; font-weight: bold; }
+    .task-item { border-left: 4px solid #38bdf8; background: #0f172a; padding: 12px; border-radius: 6px; margin: 10px 0; }
+    .hidden { display: none; }
+    .uid-tag { font-size: 11px; color: #64748b; margin-top: 4px; word-break: break-all; }
+  </style>
+
+  <!-- 1. config.js को यहाँ लोड किया -->
+  <script src="./config.js"></script>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- AUTH SECTION -->
+  <div id="authSection" class="card">
+    <h2>🔐 CPA Rewards Login</h2>
+    <label>Email Address</label>
+    <input type="email" id="authEmail" placeholder="user@example.com">
+    <label>Password</label>
+    <input type="password" id="authPass" placeholder="******">
+    
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <button class="btn" onclick="handleLogin()">Login</button>
+      <button class="btn btn-green" onclick="handleRegister()">Create Account</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="userSection" class="card hidden">
+    <div class="flex-between">
+      <h3>👋 Welcome User</h3>
+      <button class="btn btn-red" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="handleLogout()">Logout</button>
+    </div>
+    
+    <div class="uid-tag" id="uidDisplay">UID: Loading...</div>
+
+    <div style="margin: 15px 0; font-size: 20px;" class="flex-between">
+      <span>Balance:</span>
+      <span class="badge" id="userCoins">0 Coins</span>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <button class="btn btn-orange" style="font-size: 14px;" onclick="claimDailyBonus()">🎁 Daily Bonus (+50)</button>
+      <button class="btn btn-green" style="font-size: 14px;" onclick="requestWithdrawal()">💸 Withdraw</button>
+    </div>
+
+    <hr style="border-color: #334155; margin: 15px 0;">
+    
+    <h3>🔥 Available CPA Tasks</h3>
+    <div id="taskList">
+      <p style="color: #94a3b8; font-size: 14px;">Tasks लोड हो रहे हैं...</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- FIREBASE MODULE SCRIPT -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { 
+    getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, increment 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // Config config.js से आ रही है
+  const app = initializeApp(window.firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // AUTH STATE MONITORING
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('userSection').classList.remove('hidden');
+      document.getElementById('uidDisplay').innerText = "YOUR UID: " + user.uid;
+      
+      loadUserData(user.uid, user.email);
+      loadLiveTasks();
+    } else {
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('userSection').classList.add('hidden');
+    }
+  });
+
+  // LOGIN FUNCTION
+  window.handleLogin = async function() {
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value.trim();
+    if(!email || !pass) return alert("Email और Password दोनों भरें!");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      alert("✅ लॉगिन सफल रहा!");
+    } catch(err) {
+      alert("Login Error: " + err.message);
+    }
+  };
+
+  // REGISTER FUNCTION
+  window.handleRegister = async function() {
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value.trim();
+    if(!email || !pass) return alert("Email और Password दोनों भरें!");
+    if(pass.length < 6) return alert("Password कम से कम 6 अक्षर का होना चाहिए!");
+
+    try {
+      const res = await createUserWithEmailAndPassword(auth, email, pass);
+      await setDoc(doc(db, "users", res.user.uid), { 
+        email: email, 
+        coins: 0,
+        createdAt: new Date().toISOString()
+      });
+      alert("🎉 Account सफलता से बन गया!");
+    } catch(err) {
+      alert("Registration Error: " + err.message);
+    }
+  };
+
+  // LOGOUT
+  window.handleLogout = () => signOut(auth);
+
+  // LOAD USER DATA
+  async function loadUserData(uid, email) {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    if(snap.exists()) {
+      document.getElementById('userCoins').innerText = (snap.data().coins || 0) + " Coins";
+    } else {
+      await setDoc(userRef, { email: email, coins: 0 });
+      document.getElementById('userCoins').innerText = "0 Coins";
+    }
+  }
+
+  // DAILY BONUS
+  window.claimDailyBonus = async function() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    const userData = snap.data();
+
+    const now = Date.now();
+    const lastClaim = userData.lastDailyBonus || 0;
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (now - lastClaim < oneDay) {
+      const hoursLeft = Math.ceil((oneDay - (now - lastClaim)) / (1000 * 60 * 60));
+      return alert(`बोनस पहले ही क्लेम हो चुका है! ${hoursLeft} घंटे बाद दोबारा आएं।`);
+    }
+
+    await updateDoc(userRef, {
+      coins: increment(50),
+      lastDailyBonus: now
+    });
+
+    alert("🎉 +50 Daily Bonus Coins मिल गए!");
+    loadUserData(user.uid, user.email);
+  };
+
+  // WITHDRAWAL
+  window.requestWithdrawal = async function() {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    const upiId = prompt("अपनी UPI ID दर्ज करें:");
+    const coinsToRedeem = parseInt(prompt("कितने कॉइन्स रिडीम करने हैं? (Min: 500)"));
+
+    if (!upiId || isNaN(coinsToRedeem) || coinsToRedeem < 500) {
+      return alert("कम से कम 500 Coins होना ज़रूरी है!");
+    }
+
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    
+    if ((snap.data().coins || 0) < coinsToRedeem) {
+      return alert("आपके पास पर्याप्त Coins नहीं हैं!");
+    }
+
+    await updateDoc(userRef, { coins: increment(-coinsToRedeem) });
+    await setDoc(doc(db, "withdrawals", "req_" + Date.now()), {
+      uid: user.uid,
+      email: user.email,
+      upiId: upiId,
+      coins: coinsToRedeem,
+      status: "Pending",
+      createdAt: new Date().toISOString()
+    });
+
+    alert("✅ Withdrawal Request भेजी गई!");
+    loadUserData(user.uid, user.email);
+  };
+
+  // LOAD CPA TASKS
+  async function loadLiveTasks() {
+    const taskContainer = document.getElementById('taskList');
+    try {
+      const querySnap = await getDocs(collection(db, "tasks"));
+      taskContainer.innerHTML = "";
+      
+      if(querySnap.empty) {
+        taskContainer.innerHTML = "<p style='color: #94a3b8;'>अभी कोई नया Task उपलब्ध नहीं है।</p>";
+        return;
+      }
+
+      querySnap.forEach((taskDoc) => {
+        const task = taskDoc.data();
+        const item = document.createElement('div');
+        item.className = 'task-item';
+        item.innerHTML = `
+          <h4>${task.title}</h4>
+          <div class="flex-between" style="margin-top: 10px;">
+            <span style="color: #10b981; font-weight: bold;">+${task.reward} Coins</span>
+            <button class="btn btn-green" style="width: auto; padding: 6px 14px;" onclick="claimTask('${task.link}', ${task.reward})">Complete Task</button>
+          </div>
+        `;
+        taskContainer.appendChild(item);
+      });
+    } catch(e) { console.error(e); }
+  }
+
+  // CLAIM TASK
+  window.claimTask = async function(link, reward) {
+    window.open(link, '_blank');
+    const user = auth.currentUser;
+    if(!user) return;
+
+    try {
+      await updateDoc(doc(db, "users", user.uid), { coins: increment(reward) });
+      alert(`🎉 Congratulation! +${reward} Coins जुड़ गए।`);
+      loadUserData(user.uid, user.email);
+    } catch(err) { alert("Task processing failed: " + err.message); }
+  };
+</script>
+
+</body>
+</html>

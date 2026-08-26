@@ -1,0 +1,19 @@
+# Netlify Configuration File
+
+[build]
+  publish = "."
+
+# SPA Redirect Rules (ताकि पेज रिफ्रेश करने पर 404 Error न आए)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Security Headers (Firebase और CDNs allow करने के लिए)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
